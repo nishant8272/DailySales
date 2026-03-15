@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start":"tsc -b && node dist/index.js"
+    "start": "tsc -b && node dist/index.js"
   },
   "keywords": [],
   "author": "",
@@ -14,10 +14,17 @@
   "type": "commonjs",
   "dependencies": {
     "@types/express": "^5.0.6",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
+    "google-auth-library": "^10.6.1",
+    "mongoose": "^8.23.0",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/node": "^25.5.0",
     "nodemon": "^3.1.14",
     "ts-node": "^10.9.2",
     "tsx": "^4.21.0"

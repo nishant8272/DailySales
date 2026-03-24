@@ -1,10 +1,7 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
-import * as productService  from "../services/product.service";
-import {
-  validateCreateProduct,
-  validateUpdateProduct,
-} from "../middlewares/product.validator";
+import * as productService from "../services/product.service";
+import { validateCreateProduct, validateUpdateProduct } from "../utils/product.validator";
 
 // POST /api/products
 export const createProduct = async (
@@ -23,8 +20,16 @@ export const createProduct = async (
       low_stock_threshold,
     } = req.body;
 
-    validateCreateProduct
-    validateUpdateProduct
+    // Validate — throws HttpError if invalid, caught by catch below
+    validateCreateProduct({
+      name,
+      category,
+      unit,
+      current_sell_price,
+      current_buy_price,
+      current_stock,
+      low_stock_threshold,
+    });
 
     const product = await productService.createProduct({
       shop_id: req.user!.shop_id,
@@ -60,7 +65,9 @@ export const getAllProducts = async (
       req.user!.shop_id,
       {
         ...(category !== undefined ? { category: category as string } : {}),
-        ...(low_stock_only !== undefined ? { low_stock_only: low_stock_only === "true" } : {}),
+        ...(low_stock_only !== undefined
+          ? { low_stock_only: low_stock_only === "true" }
+          : {}),
         ...(search !== undefined ? { search: search as string } : {}),
       }
     );
@@ -82,10 +89,16 @@ export const getProduct = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const product = await productService.getProductById(
-      String(req.params.id),
-      req.user!.shop_id
-    );
+    const { id } = req.params;
+    if (typeof id !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid product id.",
+      });
+      return;
+    }
+
+    const product = await productService.getProductById(id, req.user!.shop_id);
 
     res.status(200).json({
       success: true,
@@ -111,6 +124,25 @@ export const updateProduct = async (
       current_buy_price,
       low_stock_threshold,
     } = req.body;
+
+    // Validate — throws HttpError if invalid, caught by catch below
+    validateUpdateProduct({
+      name,
+      category,
+      unit,
+      current_sell_price,
+      current_buy_price,
+      low_stock_threshold,
+    });
+
+    const { id } = req.params;
+    if (typeof id !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid product id.",
+      });
+      return;
+    }
 
     const product = await productService.updateProduct(
       String(req.params.id),
@@ -142,7 +174,16 @@ export const deleteProduct = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    await productService.deleteProduct(String(req.params.id), req.user!.shop_id);
+    const product_id = req.params.id;
+    if (typeof product_id !== "string") {
+      res.status(400).json({
+        success: false,
+        message: "Invalid product id.",
+      });
+      return;
+    }
+    
+    await productService.deleteProduct(product_id, req.user!.shop_id);
 
     res.status(200).json({
       success: true,

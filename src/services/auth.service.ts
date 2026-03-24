@@ -4,6 +4,7 @@ import { OAuth2Client } from "google-auth-library";
 import { Shop } from "../models/shop.model";
 import { User, UserRole } from "../models/user.model";
 import { HttpError } from "../utils/http-error";
+import jwt from "jsonwebtoken";
 
 let googleClient: OAuth2Client | null = null;
 
@@ -147,10 +148,13 @@ const continueWithGoogle = async (idToken: string) => {
   }
   await user.save();
 
+  const token = jwt.sign({userId: user._id}, process.env.JWT_SECRET as string);
+
   return {
     needsOnboarding: false as const,
     message: "Login successful",
     user,
+    token
   };
 };
 

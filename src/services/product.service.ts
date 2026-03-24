@@ -23,8 +23,7 @@ interface UpdateProductInput {
   low_stock_threshold?: number;
 }
 
-// ─── Create a new product ───────────────────────────────────────────────────
-
+// Create a new product 
 export const createProduct = async (
   input: CreateProductInput
 ): Promise<any> => {
@@ -68,8 +67,7 @@ export const createProduct = async (
   return product;
 };
 
-// ─── Get all active products for a shop ──────────────────────────────────
-
+//  Get all active products for a shop 
 export const getProductsByShop = async (
   shop_id: string,
   filters: {
@@ -101,8 +99,7 @@ export const getProductsByShop = async (
   return products;
 };
 
-// ─── Get single product by ID ──────────────────────────────────────────────
-
+// Get single product by ID 
 export const getProductById = async (
   product_id: string,
   shop_id: string
@@ -124,8 +121,7 @@ export const getProductById = async (
   return product;
 };
 
-// ─── Update product details ────────────────────────────────────────────────
-
+// Update product details
 export const updateProduct = async (
   product_id: string,
   shop_id: string,
@@ -178,8 +174,7 @@ export const updateProduct = async (
   return product;
 };
 
-// ─── Soft delete product ──────────────────────────────────────────────────
-
+// Soft delete product 
 export const deleteProduct = async (
   product_id: string,
   shop_id: string
@@ -202,8 +197,7 @@ export const deleteProduct = async (
   await product.save();
 };
 
-// ─── Get all product categories for a shop ───────────────────────────────
-
+// Get all product categories for a shop 
 export const getCategoriesByShop = async (
   shop_id: string
 ): Promise<string[]> => {

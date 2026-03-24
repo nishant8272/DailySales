@@ -43,7 +43,7 @@ export const continueWithGoogleController = async (
     }
 
     const result = await authService.continueWithGoogle(idToken);
-    res.json(result);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

@@ -27,12 +27,12 @@ export const protect = async (
     const secret = process.env.JWT_SECRET as string;
 
     const decoded = jwt.verify(token, secret) as {
-      id: string;
+      userId: string;
       shop_id: string;
       role: "owner" | "worker";
     };
 
-    const user = await User.findById(decoded.id).select(
+    const user = await User.findById(decoded.userId).select(
       "_id shop_id role name is_active"
     );
     if (!user) {

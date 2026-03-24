@@ -1,12 +1,16 @@
-import { Request, Response, NextFunction } from "express";
 import { HttpError } from "../utils/http-error";
 
-// Validate create product request
-export const validateCreateProduct = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+// Called inside createProduct controller 
+
+export const validateCreateProduct = (body: {
+  name?: unknown;
+  category?: unknown;
+  unit?: unknown;
+  current_sell_price?: unknown;
+  current_buy_price?: unknown;
+  current_stock?: unknown;
+  low_stock_threshold?: unknown;
+}): void => {
   const {
     name,
     category,
@@ -15,7 +19,7 @@ export const validateCreateProduct = (
     current_buy_price,
     current_stock,
     low_stock_threshold,
-  } = req.body;
+  } = body;
 
   const errors: string[] = [];
 
@@ -28,7 +32,7 @@ export const validateCreateProduct = (
   }
 
   const validUnits = ["piece", "packet", "kg", "litre"];
-  if (!unit || !validUnits.includes(unit)) {
+  if (!unit || !validUnits.includes(unit as string)) {
     errors.push(`Unit must be one of: ${validUnits.join(", ")}.`);
   }
 
@@ -44,7 +48,10 @@ export const validateCreateProduct = (
     errors.push("Buy price must be a positive number.");
   }
 
-  if (current_stock !== undefined && (typeof current_stock !== "number" || current_stock < 0)) {
+  if (
+    current_stock !== undefined &&
+    (typeof current_stock !== "number" || current_stock < 0)
+  ) {
     errors.push("Opening stock must be a positive number.");
   }
 
@@ -55,7 +62,6 @@ export const validateCreateProduct = (
     errors.push("Low stock threshold must be a positive number.");
   }
 
-  // Warn if buy price >= sell price (not a hard error, but flag it)
   if (
     typeof current_buy_price === "number" &&
     typeof current_sell_price === "number" &&
@@ -65,17 +71,20 @@ export const validateCreateProduct = (
   }
 
   if (errors.length > 0) {
-    return next(new HttpError(400, errors.join(" ")));
+    throw new HttpError( 400, errors.join(" "));
   }
-  next();
 };
 
-// Validate update product request (all fields optional)
-export const validateUpdateProduct = (
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void => {
+// Called inside updateProduct controller 
+
+export const validateUpdateProduct = (body: {
+  name?: unknown;
+  category?: unknown;
+  unit?: unknown;
+  current_sell_price?: unknown;
+  current_buy_price?: unknown;
+  low_stock_threshold?: unknown;
+}): void => {
   const {
     name,
     category,
@@ -83,38 +92,51 @@ export const validateUpdateProduct = (
     current_sell_price,
     current_buy_price,
     low_stock_threshold,
-  } = req.body;
+  } = body;
 
   const errors: string[] = [];
 
-  if (name !== undefined && (typeof name !== "string" || name.trim().length === 0)) {
+  if (
+    name !== undefined &&
+    (typeof name !== "string" || name.trim().length === 0)
+  ) {
     errors.push("Product name must be a non-empty string.");
   }
 
-  if (category !== undefined && (typeof category !== "string" || category.trim().length === 0)) {
+  if (
+    category !== undefined &&
+    (typeof category !== "string" || category.trim().length === 0)
+  ) {
     errors.push("Category must be a non-empty string.");
   }
 
   const validUnits = ["piece", "packet", "kg", "litre"];
-  if (unit !== undefined && !validUnits.includes(unit)) {
+  if (unit !== undefined && !validUnits.includes(unit as string)) {
     errors.push(`Unit must be one of: ${validUnits.join(", ")}.`);
   }
 
-  if (current_sell_price !== undefined && (typeof current_sell_price !== "number" || current_sell_price < 0)) {
+  if (
+    current_sell_price !== undefined &&
+    (typeof current_sell_price !== "number" || current_sell_price < 0)
+  ) {
     errors.push("Sell price must be a positive number.");
   }
 
-  if (current_buy_price !== undefined && (typeof current_buy_price !== "number" || current_buy_price < 0)) {
+  if (
+    current_buy_price !== undefined &&
+    (typeof current_buy_price !== "number" || current_buy_price < 0)
+  ) {
     errors.push("Buy price must be a positive number.");
   }
 
-  if (low_stock_threshold !== undefined && (typeof low_stock_threshold !== "number" || low_stock_threshold < 0)) {
+  if (
+    low_stock_threshold !== undefined &&
+    (typeof low_stock_threshold !== "number" || low_stock_threshold < 0)
+  ) {
     errors.push("Low stock threshold must be a positive number.");
   }
 
   if (errors.length > 0) {
-    return next(new HttpError(400, errors.join(" ")));
+    throw new HttpError( 400, errors.join(" "));
   }
-
-  next();
 };

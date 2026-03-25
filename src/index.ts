@@ -7,6 +7,9 @@ import authRoutes from "./routes/auth.routes";
 import shopRoutes from "./routes/shop.routes";
 import userRoutes from "./routes/user.routes";
 import product from "./routes/product.routes";
+import shiftRoutes from "./routes/Shift.routes";
+import reportRoutes from "./routes/report.routes";
+import alertRoutes from "./routes/alert.routes";
 
 const app = express();
 
@@ -36,6 +39,9 @@ app.use("/api/shops", shopRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/products", product);
+app.use("/api/shifts", shiftRoutes)
+app.use("/api/reports", reportRoutes);
+app.use("/api/alerts",  alertRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

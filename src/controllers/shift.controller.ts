@@ -6,6 +6,7 @@ import {
   validateCloseShift,
   validateDateParam,
 } from "../utils/shift.validator";
+import { getShiftHistory } from "../services/shift.service";
 
 // POST /api/shifts/start
 export const startShift = async (
@@ -110,6 +111,28 @@ export const closeShift = async (
         products: daily_entry.products,
       },
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /api/shifts/history?limit=10
+export const getHistory = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+
+    if (isNaN(limit) || limit < 1 || limit > 100) {
+      res.status(400).json({ success: false, message: "limit must be between 1 and 100." });
+      return;
+    }
+
+    const history = await getShiftHistory(req.user!.shop_id, limit);
+
+    res.status(200).json({ success: true, count: history.length, data: history });
   } catch (error) {
     next(error);
   }

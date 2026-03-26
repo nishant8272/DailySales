@@ -2,7 +2,27 @@ import { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import authService from "../services/auth.service";
 import { HttpError } from "../utils/http-error";
+import { AuthRequest } from "../middlewares/auth.middleware";
+import { getMe } from "../services/auth.service";
 
+// GET /api/auth/me
+export const getMyProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const data = await getMe(req.user!._id);
+ 
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+ 
 export const loginController = async (
   req: Request,
   res: Response,

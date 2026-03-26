@@ -1,18 +1,23 @@
 import { Router } from "express";
-import {
-  createUserController,
-  deactivateUserController,
-  getUserController,
-  listUsersByShopController,
-  updateUserController,
-} from "../controllers/user.controller";
+import * as userController from "../controllers/user.controller";
+import { protect } from "../middlewares/auth.middleware";
+import { ownerOnly, workerOrOwner } from "../middlewares/role.middleware";
 
 const router = Router();
 
-router.post("/", createUserController);
-router.get("/shop/:shopId", listUsersByShopController);
-router.get("/:id", getUserController);
-router.patch("/:id", updateUserController);
-router.delete("/:id", deactivateUserController);
+router.use(protect);
+
+// GET  /api/users          → list all users in shop (both can view)
+// GET  /api/users/:id      → get single user (both can view)
+// POST /api/users          → create worker (owner only)
+// PATCH /api/users/:id     → update worker details (owner only)
+// PATCH /api/users/:id/status → activate/deactivate worker (owner only)
+
+router.get("/", workerOrOwner, userController.getShopUsers);
+router.get("/:id", workerOrOwner, userController.getUser);
+
+router.post("/", ownerOnly, userController.createWorker);
+router.patch("/:id/status", ownerOnly, userController.setWorkerStatus);
+router.patch("/:id", ownerOnly, userController.updateWorker);
 
 export default router;

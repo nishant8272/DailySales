@@ -18,6 +18,7 @@ router.use(protect);
 router.post("/start", workerOrOwner, shiftController.startShift);
 router.post("/add-stock", workerOrOwner, shiftController.addStock);
 router.get("/today", workerOrOwner, shiftController.getTodayShift);
+router.get("/history", workerOrOwner, shiftController.getHistory);
 router.get("/:date", workerOrOwner, shiftController.getShiftByDate);
 
 // Owner only

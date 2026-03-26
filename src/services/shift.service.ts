@@ -12,7 +12,6 @@ import {
 // START SHIFT
 // Creates a shift_log + daily_entry with all active products pre-filled.
 // Opening stock = yesterday's closing stock (or current_stock if first time).
-
 export const startShift = async (
     shop_id: string,
     user_id: string
@@ -372,6 +371,36 @@ export const closeShift = async (
     });
 
     return daily_entry;
+};
+
+// GET /api/shifts/history
+// Returns last N closed shift entries — for the owner dashboard history table
+export const getShiftHistory = async (
+  shop_id: string,
+  limit: number = 10
+) => {
+  const entries = await DailyEntry.find({
+    shop_id: new Types.ObjectId(shop_id),
+    is_closed: true,
+  })
+    .sort({ date: -1 })
+    .limit(limit)
+    .select(
+      "date day_total_revenue day_total_profit opened_by closed_by closed_at products"
+    )
+    .populate("opened_by", "name role")
+    .populate("closed_by", "name role");
+ 
+  return entries.map((entry) => ({
+    date: entry.date,
+    day_total_revenue: entry.day_total_revenue,
+    day_total_profit: entry.day_total_profit,
+    opened_by: entry.opened_by,
+    closed_by: entry.closed_by,
+    closed_at: entry.closed_at,
+    total_products: entry.products.length,
+    total_units_sold: entry.products.reduce((sum, p) => sum + p.units_sold, 0),
+  }));
 };
 
 // GET TODAY'S SHIFT STATUS

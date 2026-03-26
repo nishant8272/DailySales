@@ -5,6 +5,7 @@ import { Shop } from "../models/shop.model";
 import { User, UserRole } from "../models/user.model";
 import { HttpError } from "../utils/http-error";
 import jwt from "jsonwebtoken";
+import { Types } from "mongoose";
 
 let googleClient: OAuth2Client | null = null;
 
@@ -21,6 +22,45 @@ const getGoogleOAuthConfig = () => {
   }
 
   return { clientId, clientSecret };
+};
+
+// GET /api/auth/me
+// Returns the logged-in user's profile + their shop details
+export const getMe = async (user_id: string) => {
+  const user = await User.findById(new Types.ObjectId(user_id)).select(
+    "-password_hash"
+  );
+ 
+  if (!user) {
+    throw new HttpError(404, "User not found.");
+  }
+ 
+  const shop = await Shop.findById(user.shop_id);
+ 
+  if (!shop) {
+    throw new HttpError(404, "Shop not found.");
+  }
+ 
+  return {
+    user: {
+      _id: user._id,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+      role: user.role,
+      is_active: user.is_active,
+      last_login: user.last_login,
+      created_at: user.created_at,
+    },
+    shop: {
+      _id: shop._id,
+      name: shop.name,
+      owner_name: shop.owner_name,
+      phone: shop.phone,
+      address: shop.address,
+      created_at: shop.created_at,
+    },
+  };
 };
 
 const getGoogleOAuthClient = () => {

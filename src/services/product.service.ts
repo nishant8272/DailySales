@@ -77,8 +77,7 @@ export const getProductsByShop = async (
   } = {}
 ): Promise<any  []> => {
   const query: Record<string, unknown> = {
-    shop_id: new Types.ObjectId(shop_id),
-    is_active: true,
+    shop_id: new Types.ObjectId(shop_id)
   };
 
   if (filters.category) {
@@ -186,14 +185,16 @@ export const deleteProduct = async (
   const product = await Product.findOne({
     _id: new Types.ObjectId(product_id),
     shop_id: new Types.ObjectId(shop_id),
-    is_active: true,
   });
 
   if (!product) {
     throw new HttpError( 404, "Product not found.");
   }
-
+ if (product.is_active) {
   product.is_active = false;
+ }else{
+  product.is_active = true;
+ }
   await product.save();
 };
 

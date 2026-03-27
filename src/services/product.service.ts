@@ -21,6 +21,7 @@ interface UpdateProductInput {
   current_sell_price?: number;
   current_buy_price?: number;
   low_stock_threshold?: number;
+  current_stock?: number; // ✅ added
 }
 
 // Create a new product 
@@ -38,7 +39,6 @@ export const createProduct = async (
     low_stock_threshold = 5,
   } = input;
 
-  // Check duplicate product name in the same shop
   const existing = await Product.findOne({
     shop_id: new Types.ObjectId(shop_id),
     name: { $regex: new RegExp(`^${name.trim()}$`, "i") },
@@ -47,8 +47,8 @@ export const createProduct = async (
 
   if (existing) {
     throw new HttpError(
-        409,
-        `Product "${name}" already exists in your shop.`,
+      409,
+      `Product "${name}" already exists in your shop.`
     );
   }
 
@@ -67,7 +67,7 @@ export const createProduct = async (
   return product;
 };
 
-//  Get all active products for a shop 
+// Get all active products for a shop 
 export const getProductsByShop = async (
   shop_id: string,
   filters: {
@@ -75,9 +75,9 @@ export const getProductsByShop = async (
     low_stock_only?: boolean;
     search?: string;
   } = {}
-): Promise<any  []> => {
+): Promise<any[]> => {
   const query: Record<string, unknown> = {
-    shop_id: new Types.ObjectId(shop_id)
+    shop_id: new Types.ObjectId(shop_id),
   };
 
   if (filters.category) {
@@ -85,7 +85,6 @@ export const getProductsByShop = async (
   }
 
   if (filters.low_stock_only) {
-    // Products where current_stock < low_stock_threshold
     query.$expr = { $lt: ["$current_stock", "$low_stock_threshold"] };
   }
 
@@ -104,7 +103,7 @@ export const getProductById = async (
   shop_id: string
 ): Promise<any> => {
   if (!Types.ObjectId.isValid(product_id)) {
-    throw new HttpError( 400, "Invalid product ID.");
+    throw new HttpError(400, "Invalid product ID.");
   }
 
   const product = await Product.findOne({
@@ -114,7 +113,7 @@ export const getProductById = async (
   });
 
   if (!product) {
-    throw new HttpError( 404, "Product not found.");
+    throw new HttpError(404, "Product not found.");
   }
 
   return product;
@@ -127,7 +126,7 @@ export const updateProduct = async (
   input: UpdateProductInput
 ): Promise<IProduct> => {
   if (!Types.ObjectId.isValid(product_id)) {
-    throw new HttpError( 400, "Invalid product ID.");
+    throw new HttpError(400, "Invalid product ID.");
   }
 
   const product = await Product.findOne({
@@ -137,7 +136,7 @@ export const updateProduct = async (
   });
 
   if (!product) {
-    throw new HttpError( 404, "Product not found.");
+    throw new HttpError(404, "Product not found.");
   }
 
   // If name is being changed, check for duplicates
@@ -151,7 +150,7 @@ export const updateProduct = async (
 
     if (duplicate) {
       throw new HttpError(
-          409,
+        409,
         `Another product named "${input.name}" already exists.`
       );
     }
@@ -167,6 +166,8 @@ export const updateProduct = async (
     product.current_buy_price = input.current_buy_price;
   if (input.low_stock_threshold !== undefined)
     product.low_stock_threshold = input.low_stock_threshold;
+  if (input.current_stock !== undefined)  // ✅ added
+    product.current_stock = input.current_stock;
 
   await product.save();
 
@@ -179,7 +180,7 @@ export const deleteProduct = async (
   shop_id: string
 ): Promise<void> => {
   if (!Types.ObjectId.isValid(product_id)) {
-    throw new HttpError( 400, "Invalid product ID.");
+    throw new HttpError(400, "Invalid product ID.");
   }
 
   const product = await Product.findOne({
@@ -188,13 +189,15 @@ export const deleteProduct = async (
   });
 
   if (!product) {
-    throw new HttpError( 404, "Product not found.");
+    throw new HttpError(404, "Product not found.");
   }
- if (product.is_active) {
-  product.is_active = false;
- }else{
-  product.is_active = true;
- }
+
+  if (product.is_active) {
+    product.is_active = false;
+  } else {
+    product.is_active = true;
+  }
+
   await product.save();
 };
 
@@ -208,4 +211,4 @@ export const getCategoriesByShop = async (
   });
 
   return categories.sort();
-};
+};  

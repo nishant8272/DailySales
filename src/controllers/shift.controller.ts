@@ -15,9 +15,20 @@ export const startShift = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const { worker_id } = req.body;
+
+    if (worker_id && req.user!.role !== "owner") {
+      res.status(403).json({
+        success: false,
+        message: "Only the owner can start a shift for another worker.",
+      });
+      return;
+    }
+
     const { shift_log, daily_entry } = await shiftService.startShift(
       req.user!.shop_id,
-      req.user!._id
+      req.user!._id,
+      worker_id
     );
 
     res.status(201).json({

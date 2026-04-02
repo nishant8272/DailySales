@@ -67,6 +67,32 @@ export const getMonthlyReport = async (
   }
 };
 
+// GET /api/reports/yearly?year=2026
+export const getYearlyReport = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const year = Number(req.query.year);
+
+    if (!year || Number.isNaN(year) || year < 2020 || year > 2100) {
+      res.status(400).json({
+        success: false,
+        message: "year must be a valid number (e.g. 2026).",
+      });
+      return;
+    }
+
+    const shop_id: any = req.user!.shop_id;
+    const report = await reportService.getYearlyReport(shop_id, year);
+
+    res.status(200).json({ success: true, data: report });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // GET /api/reports/product/:id/price-history
 export const getProductPriceHistory = async (
   req: AuthRequest,

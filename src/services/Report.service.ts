@@ -96,12 +96,43 @@ export const getWeeklyReport = async (shop_id: string) => {
     dailyBreakdown[0]
   );
 
+  const productMap = new Map<
+    string,
+    { product_name: string; units_sold: number; revenue: number; profit: number }
+  >();
+
+  for (const entry of entries) {
+    for (const product of entry.products) {
+      const key = product.product_id.toString();
+      const existing = productMap.get(key);
+
+      if (existing) {
+        existing.units_sold += product.units_sold;
+        existing.revenue = parseFloat((existing.revenue + product.revenue).toFixed(2));
+        existing.profit = parseFloat((existing.profit + product.profit).toFixed(2));
+      } else {
+        productMap.set(key, {
+          product_name: product.product_name,
+          units_sold: product.units_sold,
+          revenue: product.revenue,
+          profit: product.profit,
+        });
+      }
+    }
+  }
+
+  const top_products = Array.from(productMap.entries())
+    .map(([product_id, data]) => ({ product_id, ...data }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
   return {
     period: { from: dates[0], to: dates[dates.length - 1] },
     week_total_revenue,
     week_total_profit,
     week_total_units,
     best_day: best_day.has_data ? best_day : null,
+    top_products,
     daily_breakdown: dailyBreakdown,
   };
 };
@@ -194,6 +225,99 @@ export const getMonthlyReport = async (
     month_total_units,
     top_products,
     daily_breakdown: dailyBreakdown,
+  };
+};
+
+// YEARLY REPORT
+// Full year — revenue + profit per month, top months, yearly totals
+export const getYearlyReport = async (shop_id: string, year: number) => {
+  const shopObjectId = new Types.ObjectId(shop_id);
+  const yearPrefix = `${year}-`;
+
+  const entries = await DailyEntry.find({
+    shop_id: shopObjectId,
+    date: { $regex: `^${yearPrefix}` },
+    is_closed: true,
+  }).sort({ date: 1 });
+
+  const monthlyBreakdown = Array.from({ length: 12 }, (_, index) => {
+    const month = String(index + 1).padStart(2, "0");
+    return {
+      month: `${year}-${month}`,
+      revenue: 0,
+      profit: 0,
+      units_sold: 0,
+      has_data: false,
+    };
+  });
+
+  for (const entry of entries) {
+    const monthIndex = Number(entry.date.slice(5, 7)) - 1;
+    const monthRow = monthlyBreakdown[monthIndex];
+
+    if (!monthRow) {
+      continue;
+    }
+
+    const unitsSold = entry.products.reduce((sum, product) => sum + product.units_sold, 0);
+
+    monthRow.revenue = parseFloat((monthRow.revenue + entry.day_total_revenue).toFixed(2));
+    monthRow.profit = parseFloat((monthRow.profit + entry.day_total_profit).toFixed(2));
+    monthRow.units_sold += unitsSold;
+    monthRow.has_data = true;
+  }
+
+  const yearly_total_revenue = parseFloat(
+    monthlyBreakdown.reduce((sum, month) => sum + month.revenue, 0).toFixed(2)
+  );
+  const yearly_total_profit = parseFloat(
+    monthlyBreakdown.reduce((sum, month) => sum + month.profit, 0).toFixed(2)
+  );
+  const yearly_total_units = monthlyBreakdown.reduce((sum, month) => sum + month.units_sold, 0);
+
+  const best_month = monthlyBreakdown.reduce(
+    (best, month) => (month.revenue > best.revenue ? month : best),
+    monthlyBreakdown[0]!
+  );
+
+  const productMap = new Map<
+    string,
+    { product_name: string; units_sold: number; revenue: number; profit: number }
+  >();
+
+  for (const entry of entries) {
+    for (const product of entry.products) {
+      const key = product.product_id.toString();
+      const existing = productMap.get(key);
+
+      if (existing) {
+        existing.units_sold += product.units_sold;
+        existing.revenue = parseFloat((existing.revenue + product.revenue).toFixed(2));
+        existing.profit = parseFloat((existing.profit + product.profit).toFixed(2));
+      } else {
+        productMap.set(key, {
+          product_name: product.product_name,
+          units_sold: product.units_sold,
+          revenue: product.revenue,
+          profit: product.profit,
+        });
+      }
+    }
+  }
+
+  const top_products = Array.from(productMap.entries())
+    .map(([product_id, data]) => ({ product_id, ...data }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 5);
+
+  return {
+    period: { year },
+    yearly_total_revenue,
+    yearly_total_profit,
+    yearly_total_units,
+    best_month: best_month.has_data ? best_month : null,
+    top_products,
+    monthly_breakdown: monthlyBreakdown,
   };
 };
 

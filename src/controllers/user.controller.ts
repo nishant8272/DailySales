@@ -64,7 +64,12 @@ export const getUser = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const user_id:any = req.params.id;
+    const user_id = req.params.id;
+    if (typeof user_id !== "string") {
+      res.status(400).json({ success: false, message: "Invalid user ID." });
+      return;
+    }
+
     const user = await userService.getUserById(
       user_id,
       req.user!.shop_id
@@ -84,7 +89,23 @@ export const updateWorker = async (
 ): Promise<void> => {
   try {
     const { name, phone, email } = req.body;
-    const user_id:any = req.params.id;
+    const user_id = req.params.id;
+    if (typeof user_id !== "string") {
+      res.status(400).json({ success: false, message: "Invalid user ID." });
+      return;
+    }
+
+    if (
+      name === undefined &&
+      phone === undefined &&
+      email === undefined
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "At least one field is required: name, phone, or email.",
+      });
+      return;
+    }
 
     const user = await userService.updateWorker(
       user_id,
@@ -102,6 +123,43 @@ export const updateWorker = async (
   }
 };
 
+// PATCH /api/users/me  → update currently logged-in user profile
+export const updateMyProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { name, phone, email } = req.body;
+
+    if (
+      name === undefined &&
+      phone === undefined &&
+      email === undefined
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "At least one field is required: name, phone, or email.",
+      });
+      return;
+    }
+
+    const user = await userService.updateMyProfile(
+      req.user!._id,
+      req.user!.shop_id,
+      { name, phone, email }
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Profile updated successfully.",
+      data: user,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // PATCH /api/users/:id/status  → activate or deactivate worker
 export const setWorkerStatus = async (
   req: AuthRequest,
@@ -110,7 +168,12 @@ export const setWorkerStatus = async (
 ): Promise<void> => {
   try {
     const { is_active } = req.body;
-    const user_id:any = req.params.id;
+    const user_id = req.params.id;
+    if (typeof user_id !== "string") {
+      res.status(400).json({ success: false, message: "Invalid user ID." });
+      return;
+    }
+
     if (typeof is_active !== "boolean") {
       res.status(400).json({
         success: false,

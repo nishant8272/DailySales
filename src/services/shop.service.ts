@@ -42,6 +42,32 @@ export const updateShopById = async (id: string, payload: UpdateShopInput) => {
   return shop;
 };
 
+export const updateMyShop = async (
+  shop_id: string,
+  payload: { name?: string; address?: string }
+) => {
+  const updatePayload: { name?: string; address?: string } = {};
+
+  if (payload.name !== undefined) {
+    updatePayload.name = payload.name.trim();
+  }
+
+  if (payload.address !== undefined) {
+    updatePayload.address = payload.address.trim();
+  }
+
+  const shop = await Shop.findByIdAndUpdate(shop_id, updatePayload, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!shop) {
+    throw new HttpError(404, "Shop not found");
+  }
+
+  return shop;
+};
+
 export const deactivateShopById = async (id: string) => {
   const shop = await Shop.findByIdAndUpdate(
     id,

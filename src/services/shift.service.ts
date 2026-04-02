@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { DailyEntry, ShiftLog, Product, StockAdditionEvent, PriceHistoryLog, Alert } from "../models";
+import { DailyEntry, ShiftLog, Product, StockAdditionEvent, PriceHistoryLog, Alert, User } from "../models";
 import { HttpError } from "../utils/http-error";
 import {
     calculateProductSales,
@@ -14,10 +14,35 @@ import {
 // Opening stock = yesterday's closing stock (or current_stock if first time).
 export const startShift = async (
     shop_id: string,
-    user_id: string
+    user_id: string,
+    worker_id?: string
 ): Promise<{ shift_log: InstanceType<typeof ShiftLog>; daily_entry: InstanceType<typeof DailyEntry> }> => {
     const shopObjectId = new Types.ObjectId(shop_id);
     const userObjectId = new Types.ObjectId(user_id);
+    let workerObjectId = userObjectId;
+
+    if (worker_id) {
+        if (!Types.ObjectId.isValid(worker_id)) {
+            throw new HttpError(400, "Invalid worker ID.");
+        }
+
+        workerObjectId = new Types.ObjectId(worker_id);
+
+        const worker = await User.findOne({
+            _id: workerObjectId,
+            shop_id: shopObjectId,
+        }).select("_id role is_active");
+
+        if (!worker) {
+            throw new HttpError(404, "Worker not found.");
+        }
+
+       
+
+        if (!worker.is_active) {
+            throw new HttpError(403, "Selected worker is inactive.");
+        }
+    }
 
     // Get today's date in YYYY-MM-DD
     const today = getTodayDate();
@@ -86,7 +111,7 @@ export const startShift = async (
     // Create shift_log first (we need its _id for daily_entry)
     const shift_log = await ShiftLog.create({
         shop_id: shopObjectId,
-        worker_id: userObjectId,
+        worker_id: workerObjectId,
         date: today,
         shift_start: new Date(),
         status: "open",
@@ -101,7 +126,7 @@ export const startShift = async (
         shop_id: shopObjectId,
         date: today,
         shift_log_id: shift_log._id,
-        opened_by: userObjectId,
+        opened_by: workerObjectId,
         is_closed: false,
         day_total_revenue: 0,
         day_total_profit: 0,

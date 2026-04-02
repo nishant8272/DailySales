@@ -15,6 +15,7 @@ export const createWorker = async (
   }
 ) => {
   const shopObjectId = new Types.ObjectId(shop_id);
+  const normalizedEmail = input.email?.trim().toLowerCase();
 
   // Check duplicate phone in same shop
   const existing = await User.findOne({
@@ -29,13 +30,23 @@ export const createWorker = async (
     );
   }
 
+  if (normalizedEmail) {
+    const existingEmail = await User.findOne({
+      email: normalizedEmail,
+    });
+
+    if (existingEmail) {
+      throw new HttpError(409, "Email is already in use.");
+    }
+  }
+
   const password_hash = await bcrypt.hash(input.password, 10);
 
   const worker = await User.create({
     shop_id: shopObjectId,
     name: input.name.trim(),
     phone: input.phone.trim(),
-    email: input.email?.trim().toLowerCase() ?? undefined,
+    email: normalizedEmail ?? undefined,
     role: "worker",            // always worker — owner account is created at registration
     auth_provider: "password",
     password_hash,
@@ -95,13 +106,8 @@ export const updateWorker = async (
     throw new HttpError(404, "User not found.");
   }
 
-  // Prevent owner from being edited through this route
-  if (user.role === "owner") {
-    throw new HttpError(403, "Owner profile cannot be edited here.");
-  }
-
   // Check phone duplicate if phone is being changed
-  if (input.phone && input.phone !== user.phone) {
+  if (input.phone && input.phone.trim() !== user.phone) {
     const duplicate = await User.findOne({
       shop_id: new Types.ObjectId(shop_id),
       phone: input.phone,
@@ -112,14 +118,45 @@ export const updateWorker = async (
     }
   }
 
+  if (input.email !== undefined) {
+    const normalizedEmail = input.email.trim().toLowerCase();
+
+    if (normalizedEmail.length > 0) {
+      const duplicateEmail = await User.findOne({
+        email: normalizedEmail,
+        _id: { $ne: new Types.ObjectId(user_id) },
+      });
+
+      if (duplicateEmail) {
+        throw new HttpError(409, "Email already in use.");
+      }
+    }
+  }
+
   if (input.name) user.name = input.name.trim();
   if (input.phone) user.phone = input.phone.trim();
-  if (input.email) user.email = input.email.trim().toLowerCase();
+  if (input.email !== undefined) {
+    const normalizedEmail = input.email.trim().toLowerCase();
+    if (normalizedEmail.length === 0) {
+      user.set("email", undefined);
+    } else {
+      user.email = normalizedEmail;
+    }
+  }
 
   await user.save();
 
   const { password_hash: _, ...userData } = user.toObject();
   return userData;
+};
+
+// Update currently logged-in user profile
+export const updateMyProfile = async (
+  user_id: string,
+  shop_id: string,
+  input: { name?: string; phone?: string; email?: string }
+) => {
+  return updateWorker(user_id, shop_id, input);
 };
 
 // Deactivate / reactivate a worker 

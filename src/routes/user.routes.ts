@@ -12,8 +12,10 @@ router.use(protect);
 // POST /api/users          → create worker (owner only)
 // PATCH /api/users/:id     → update worker details (owner only)
 // PATCH /api/users/:id/status → activate/deactivate worker (owner only)
+// PATCH /api/users/me      → update own profile
 
 router.get("/", workerOrOwner, userController.getShopUsers);
+router.patch("/me", workerOrOwner, userController.updateMyProfile);
 router.get("/:id", workerOrOwner, userController.getUser);
 
 router.post("/", ownerOnly, userController.createWorker);

@@ -14,10 +14,12 @@ import {
 // Opening stock = yesterday's closing stock (or current_stock if first time).
 export const startShift = async (
     shop_id: string,
-    user_id: string
+    started_by_id: string,
+    worker_id?: string
 ): Promise<{ shift_log: InstanceType<typeof ShiftLog>; daily_entry: InstanceType<typeof DailyEntry> }> => {
     const shopObjectId = new Types.ObjectId(shop_id);
-    const userObjectId = new Types.ObjectId(user_id);
+    const startedByObjectId = new Types.ObjectId(started_by_id);
+    const workerObjectId = new Types.ObjectId(worker_id ?? started_by_id);
 
     // Get today's date in YYYY-MM-DD
     const today = getTodayDate();
@@ -86,7 +88,7 @@ export const startShift = async (
     // Create shift_log first (we need its _id for daily_entry)
     const shift_log = await ShiftLog.create({
         shop_id: shopObjectId,
-        worker_id: userObjectId,
+        worker_id: workerObjectId,
         date: today,
         shift_start: new Date(),
         status: "open",
@@ -101,7 +103,7 @@ export const startShift = async (
         shop_id: shopObjectId,
         date: today,
         shift_log_id: shift_log._id,
-        opened_by: userObjectId,
+        opened_by: startedByObjectId,
         is_closed: false,
         day_total_revenue: 0,
         day_total_profit: 0,
@@ -413,7 +415,7 @@ export const getTodayShift = async (
     const daily_entry = await DailyEntry.findOne({
         shop_id: new Types.ObjectId(shop_id),
         date: today,
-    });
+    }).populate("opened_by", "name role");
 
     return daily_entry;
 };

@@ -21,6 +21,7 @@ interface UpdateProductInput {
   current_sell_price?: number;
   current_buy_price?: number;
   low_stock_threshold?: number;
+  current_stock?: number;
 }
 
 // Create a new product 
@@ -161,12 +162,30 @@ export const updateProduct = async (
   if (input.name !== undefined) product.name = input.name.trim();
   if (input.category !== undefined) product.category = input.category.trim();
   if (input.unit !== undefined) product.unit = input.unit;
+
+  const nextBuyPrice =
+    input.current_buy_price !== undefined
+      ? input.current_buy_price
+      : product.current_buy_price;
+  const nextSellPrice =
+    input.current_sell_price !== undefined
+      ? input.current_sell_price
+      : product.current_sell_price;
+
+  if (nextBuyPrice >= nextSellPrice) {
+    throw new HttpError(
+      400,
+      "Buy price must be less than sell price. You will sell at a loss."
+    );
+  }
+
   if (input.current_sell_price !== undefined)
     product.current_sell_price = input.current_sell_price;
   if (input.current_buy_price !== undefined)
     product.current_buy_price = input.current_buy_price;
   if (input.low_stock_threshold !== undefined)
     product.low_stock_threshold = input.low_stock_threshold;
+  if (input.current_stock !== undefined) product.current_stock = input.current_stock;
 
   await product.save();
 

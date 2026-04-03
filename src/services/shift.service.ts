@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { DailyEntry, ShiftLog, Product, StockAdditionEvent, PriceHistoryLog, Alert } from "../models";
+import { DailyEntry, ShiftLog, Product, StockAdditionEvent, PriceHistoryLog, Alert, User } from "../models";
 import { HttpError } from "../utils/http-error";
 import {
     calculateProductSales,

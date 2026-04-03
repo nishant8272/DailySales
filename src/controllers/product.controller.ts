@@ -123,6 +123,7 @@ export const updateProduct = async (
       current_sell_price,
       current_buy_price,
       low_stock_threshold,
+      current_stock,
     } = req.body;
 
     // Validate — throws HttpError if invalid, caught by catch below
@@ -133,6 +134,7 @@ export const updateProduct = async (
       current_sell_price,
       current_buy_price,
       low_stock_threshold,
+      current_stock,
     });
 
     const { id } = req.params;
@@ -154,6 +156,7 @@ export const updateProduct = async (
         current_sell_price,
         current_buy_price,
         low_stock_threshold,
+        current_stock,
       }
     );
 

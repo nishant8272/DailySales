@@ -1,4 +1,5 @@
 import { Response, NextFunction } from "express";
+import { Types } from "mongoose";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import * as shiftService from "../services/shift.service";
 import {
@@ -15,20 +16,21 @@ export const startShift = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const { worker_id } = req.body;
+    const requestedWorkerId = req.body?.worker_id as string | undefined;
+    const selectedWorkerId =
+      req.user!.role === "owner" && requestedWorkerId
+        ? requestedWorkerId
+        : req.user!._id;
 
-    if (worker_id && req.user!.role !== "owner") {
-      res.status(403).json({
-        success: false,
-        message: "Only the owner can start a shift for another worker.",
-      });
+    if (!Types.ObjectId.isValid(selectedWorkerId)) {
+      res.status(400).json({ success: false, message: "Invalid worker_id." });
       return;
     }
 
     const { shift_log, daily_entry } = await shiftService.startShift(
       req.user!.shop_id,
       req.user!._id,
-      worker_id
+      selectedWorkerId
     );
 
     res.status(201).json({

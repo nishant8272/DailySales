@@ -84,6 +84,7 @@ export const validateUpdateProduct = (body: {
   current_sell_price?: unknown;
   current_buy_price?: unknown;
   low_stock_threshold?: unknown;
+  current_stock?: unknown;
 }): void => {
   const {
     name,
@@ -92,6 +93,7 @@ export const validateUpdateProduct = (body: {
     current_sell_price,
     current_buy_price,
     low_stock_threshold,
+    current_stock,
   } = body;
 
   const errors: string[] = [];
@@ -134,6 +136,13 @@ export const validateUpdateProduct = (body: {
     (typeof low_stock_threshold !== "number" || low_stock_threshold < 0)
   ) {
     errors.push("Low stock threshold must be a positive number.");
+  }
+
+  if (
+    current_stock !== undefined &&
+    (typeof current_stock !== "number" || current_stock < 0)
+  ) {
+    errors.push("Current stock must be a positive number.");
   }
 
   if (errors.length > 0) {

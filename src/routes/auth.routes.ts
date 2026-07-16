@@ -11,6 +11,6 @@ const router = Router();
 router.post("/login", loginController);
 router.post("/google/continue", continueWithGoogleController);
 router.post("/google/onboard", onboardGoogleController);
-router.get("/me", protect, getMyProfile)
+router.get("/me", protect, getMyProfile);
 
 export default router;

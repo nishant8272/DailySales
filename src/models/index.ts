@@ -6,3 +6,4 @@ export { StockAdditionEvent } from "./stock-addition-event.model";
 export { PriceHistoryLog } from "./price-history-log.model";
 export { ShiftLog } from "./shift-log.model";
 export { Alert } from "./alert.model";
+export { UdharEntry } from "./udhar.model";

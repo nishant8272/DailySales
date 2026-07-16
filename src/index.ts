@@ -10,8 +10,11 @@ import product from "./routes/product.routes";
 import shiftRoutes from "./routes/Shift.routes";
 import reportRoutes from "./routes/report.routes";
 import alertRoutes from "./routes/alert.routes";
+import googleRoutes from "./routes/google.routes";
+import udharRoutes from "./routes/udhar.routes";
 
 const app = express();
+
 
 const PORT = Number(process.env.PORT || 3000);
 const MONGO_URI = process.env.MONGODB_URL;
@@ -38,12 +41,18 @@ app.get("/health", (_req, res) => {
 app.use("/api/shops", shopRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", googleRoutes);
+
 app.use("/api/products", product);
+
 app.use("/api/shifts", shiftRoutes)
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts",  alertRoutes);
+app.use("/api/udhar", udharRoutes);
+
 
 app.use(notFoundHandler);
+
 app.use(errorHandler);
 
 connectDB(MONGO_URI)

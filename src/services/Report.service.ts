@@ -213,17 +213,16 @@ export const getMonthlyReport = async (
     }
   }
 
-  const top_products = Array.from(productMap.entries())
+  const product_stats = Array.from(productMap.entries())
     .map(([product_id, data]) => ({ product_id, ...data }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 5);
+    .sort((a, b) => b.revenue - a.revenue);
 
   return {
     period: { year, month },
     month_total_revenue,
     month_total_profit,
     month_total_units,
-    top_products,
+    product_stats,
     daily_breakdown: dailyBreakdown,
   };
 };

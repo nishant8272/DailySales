@@ -29,21 +29,22 @@ export const loginController = async (
   next: NextFunction
 ) => {
   try {
-    const { phone, password, shop_id } = req.body;
+    const { phone, email, password, shop_id } = req.body;
 
-    if (!phone || !password) {
-      throw new HttpError(400, "phone and password are required");
+    if ((!phone && !email) || !password) {
+      throw new HttpError(400, "Phone or Email and password are required");
     }
 
     if (shop_id && !mongoose.isValidObjectId(shop_id)) {
       throw new HttpError(400, "Invalid shop_id");
     }
 
-    const user = await authService.loginWithPassword({ phone, password, shop_id });
+    const result = await authService.loginWithPassword({ phone, email, password, shop_id });
 
     res.json({
       message: "Login successful",
-      user,
+      user: result.user,
+      token: result.token,
     });
   } catch (error) {
     next(error);

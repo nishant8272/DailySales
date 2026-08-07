@@ -57,7 +57,7 @@ export const getUdharCustomers = async (
   try {
     const shopId = req.user!.shop_id;
     const userId = req.user!._id;
-    const role = req.user!.role;
+    const role = req.user!.role === "super_admin" ? "owner" : req.user!.role;
     const recordedBy = req.query.recorded_by as string | undefined;
 
     const data = await udharService.getUdharCustomers(shopId, userId, role, recordedBy);
@@ -81,7 +81,7 @@ export const getUdharTransactions = async (
   try {
     const shopId = req.user!.shop_id;
     const userId = req.user!._id;
-    const role = req.user!.role;
+    const role = req.user!.role === "super_admin" ? "owner" : req.user!.role;
     const customerName = req.query.customer_name as string | undefined;
     const recordedBy = req.query.recorded_by as string | undefined;
 
@@ -107,7 +107,7 @@ export const deleteUdharEntry = async (
     const entryId = req.params.id as string;
     const shopId = req.user!.shop_id;
     const userId = req.user!._id;
-    const role = req.user!.role;
+    const role = req.user!.role === "super_admin" ? "owner" : req.user!.role;
 
     const result = await udharService.deleteUdharEntry(entryId, shopId, userId, role);
 

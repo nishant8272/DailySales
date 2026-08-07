@@ -12,6 +12,7 @@ import reportRoutes from "./routes/report.routes";
 import alertRoutes from "./routes/alert.routes";
 import googleRoutes from "./routes/google.routes";
 import udharRoutes from "./routes/udhar.routes";
+import superAdminRoutes from "./routes/superadmin.routes";
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use("/api/shifts", shiftRoutes)
 app.use("/api/reports", reportRoutes);
 app.use("/api/alerts",  alertRoutes);
 app.use("/api/udhar", udharRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 
 app.use(notFoundHandler);

@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
   user?: {
     _id: string;
     shop_id: string;
-    role: "owner" | "worker";
+    role: "owner" | "worker" | "super_admin";
     name: string;
   };
 }
@@ -28,8 +28,8 @@ export const protect = async (
 
     const decoded = jwt.verify(token, secret) as {
       userId: string;
-      shop_id: string;
-      role: "owner" | "worker";
+      shop_id?: string;
+      role: "owner" | "worker" | "super_admin";
     };
 
     const user = await User.findById(decoded.userId).select(
@@ -44,10 +44,14 @@ export const protect = async (
 
     req.user = {
       _id: user._id.toString(),
-      shop_id: user.shop_id.toString(),
+      shop_id: user.shop_id ? user.shop_id.toString() : "",
       role: user.role,
       name: user.name,
     };
+
+    if (user.role === "super_admin" && req.headers["x-shop-id"]) {
+      req.user.shop_id = req.headers["x-shop-id"] as string;
+    }
     next();
   } catch (error) {
     if (error instanceof jwt.JsonWebTokenError) {

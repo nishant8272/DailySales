@@ -1,10 +1,10 @@
 import { Document, Schema, Types, model } from "mongoose";
 
-export type UserRole = "owner" | "worker";
+export type UserRole = "owner" | "worker" | "super_admin";
 export type AuthProvider = "password" | "google";
 
 export interface IUser extends Document {
-  shop_id: Types.ObjectId;
+  shop_id?: Types.ObjectId;
   name: string;
   email?: string;
   google_id?: string;
@@ -20,12 +20,18 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
-    shop_id: { type: Schema.Types.ObjectId, ref: "Shop", required: true },
+    shop_id: {
+      type: Schema.Types.ObjectId,
+      ref: "Shop",
+      required: function (this: IUser): boolean {
+        return this.role !== "super_admin";
+      },
+    },
     name: { type: String, required: true, trim: true },
     email: { type: String, trim: true, lowercase: true },
     google_id: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },
-    role: { type: String, enum: ["owner", "worker"], required: true },
+    role: { type: String, enum: ["owner", "worker", "super_admin"], required: true },
     auth_provider: {
       type: String,
       enum: ["password", "google"],

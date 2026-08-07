@@ -35,8 +35,34 @@ export const getMe = async (user_id: string) => {
     throw new HttpError(404, "User not found.");
   }
  
-  const shop = await Shop.findById(user.shop_id);
+  let shop = null;
+  if (user.shop_id) {
+    shop = await Shop.findById(user.shop_id);
+  }
  
+  if (!shop && user.role === "super_admin") {
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        is_active: user.is_active,
+        last_login: user.last_login,
+        created_at: user.created_at,
+      },
+      shop: {
+        _id: "global",
+        name: "Platform Overview",
+        owner_name: "Super Admin",
+        phone: user.phone,
+        address: "Global Dashboard",
+        created_at: user.created_at,
+      },
+    };
+  }
+
   if (!shop) {
     throw new HttpError(404, "Shop not found.");
   }
@@ -80,8 +106,9 @@ type GoogleProfile = {
 };
 
 type PasswordLoginInput = {
-  phone: string;
-  password: string;
+  phone?: string;
+  email?: string;
+  password?: string;
   shop_id?: string;
 };
 
@@ -128,11 +155,22 @@ const verifyGoogleToken = async (idToken: string): Promise<GoogleProfile> => {
   return profile;
 };
 
-const loginWithPassword = async ({ phone, password, shop_id }: PasswordLoginInput) => {
-  const query: { phone: string; is_active: boolean; shop_id?: string } = {
-    phone,
+const loginWithPassword = async ({ phone, email, password, shop_id }: PasswordLoginInput) => {
+  if (!password) {
+    throw new HttpError(400, "Password is required");
+  }
+
+  const query: any = {
     is_active: true,
   };
+
+  if (email) {
+    query.email = email.trim().toLowerCase();
+  } else if (phone) {
+    query.phone = phone.trim();
+  } else {
+    throw new HttpError(400, "Phone or Email is required");
+  }
 
   if (shop_id) {
     query.shop_id = shop_id;
@@ -154,7 +192,12 @@ const loginWithPassword = async ({ phone, password, shop_id }: PasswordLoginInpu
   await user.save();
 
   const safeUser = await User.findById(user._id).select("-password_hash");
-  return safeUser;
+  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET as string);
+
+  return {
+    user: safeUser,
+    token,
+  };
 };
 
 const continueWithGoogle = async (idToken: string) => {

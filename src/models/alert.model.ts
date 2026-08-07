@@ -1,9 +1,17 @@
 import { Schema, model, Document, Types } from "mongoose";
 
 export interface IAlert extends Document {
-  shop_id: Types.ObjectId;
+  shop_id?: Types.ObjectId;
   product_id?: Types.ObjectId;
-  type: "low_stock" | "price_loss" | "shift_not_closed";
+  type:
+    | "low_stock"
+    | "price_loss"
+    | "shift_not_closed"
+    | "new_shop"
+    | "shop_inactivity"
+    | "failed_payment"
+    | "high_expense"
+    | "revenue_drop";
   message: string;
   is_read: boolean;
   created_at: Date;
@@ -12,7 +20,7 @@ export interface IAlert extends Document {
 
 const alertSchema = new Schema<IAlert>(
   {
-    shop_id: { type: Schema.Types.ObjectId, ref: "Shop", required: true },
+    shop_id: { type: Schema.Types.ObjectId, ref: "Shop", default: null },
     product_id: {
       type: Schema.Types.ObjectId,
       ref: "Product",
@@ -20,7 +28,16 @@ const alertSchema = new Schema<IAlert>(
     },
     type: {
       type: String,
-      enum: ["low_stock", "price_loss", "shift_not_closed"],
+      enum: [
+        "low_stock",
+        "price_loss",
+        "shift_not_closed",
+        "new_shop",
+        "shop_inactivity",
+        "failed_payment",
+        "high_expense",
+        "revenue_drop",
+      ],
       required: true,
     },
     message: { type: String, required: true, trim: true },

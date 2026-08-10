@@ -9,7 +9,11 @@ export const getStatsController = async (
   next: NextFunction
 ) => {
   try {
-    const stats = await superAdminService.getGlobalStats();
+    const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+    const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+    const shop_id = req.query.shop_id ? String(req.query.shop_id) : undefined;
+
+    const stats = await superAdminService.getGlobalStats({ startDate, endDate, shop_id });
     res.json({ success: true, data: stats });
   } catch (error) {
     next(error);
@@ -22,7 +26,11 @@ export const getChartsController = async (
   next: NextFunction
 ) => {
   try {
-    const charts = await superAdminService.getGlobalCharts();
+    const startDate = req.query.startDate ? String(req.query.startDate) : undefined;
+    const endDate = req.query.endDate ? String(req.query.endDate) : undefined;
+    const shop_id = req.query.shop_id ? String(req.query.shop_id) : undefined;
+
+    const charts = await superAdminService.getGlobalCharts({ startDate, endDate, shop_id });
     res.json({ success: true, data: charts });
   } catch (error) {
     next(error);

@@ -4,25 +4,43 @@ import bcrypt from "bcrypt";
 import { HttpError } from "../utils/http-error";
 
 // 1. PLATFORM-WIDE STATS
-export const getGlobalStats = async () => {
+export const getGlobalStats = async (filter?: { startDate?: string | undefined; endDate?: string | undefined; shop_id?: string | undefined }) => {
+  const matchQuery: any = { is_closed: true };
+  if (filter?.shop_id) {
+    matchQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  if (filter?.startDate || filter?.endDate) {
+    matchQuery.date = {};
+    if (filter.startDate) matchQuery.date.$gte = filter.startDate;
+    if (filter.endDate) matchQuery.date.$lte = filter.endDate;
+  }
+
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   // Shop stats
-  const totalShops = await Shop.countDocuments();
-  const activeShops = await Shop.countDocuments({ is_active: true });
-  const inactiveShops = await Shop.countDocuments({ is_active: false });
-  const newShops = await Shop.countDocuments({ created_at: { $gte: thirtyDaysAgo } });
+  const shopQuery: any = {};
+  if (filter?.shop_id) {
+    shopQuery._id = new Types.ObjectId(filter.shop_id);
+  }
+  const totalShops = await Shop.countDocuments(shopQuery);
+  const activeShops = await Shop.countDocuments({ ...shopQuery, is_active: true });
+  const inactiveShops = await Shop.countDocuments({ ...shopQuery, is_active: false });
+  const newShops = await Shop.countDocuments({ ...shopQuery, created_at: { $gte: thirtyDaysAgo } });
 
   // User stats
-  const totalUsers = await User.countDocuments();
-  const activeUsers = await User.countDocuments({ is_active: true });
-  const shopOwners = await User.countDocuments({ role: "owner" });
-  const employees = await User.countDocuments({ role: "worker" });
+  const userQuery: any = {};
+  if (filter?.shop_id) {
+    userQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  const totalUsers = await User.countDocuments(userQuery);
+  const activeUsers = await User.countDocuments({ ...userQuery, is_active: true });
+  const shopOwners = await User.countDocuments({ ...userQuery, role: "owner" });
+  const employees = await User.countDocuments({ ...userQuery, role: "worker" });
 
   // Sales stats
   const salesAggregate = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     {
       $group: {
         _id: null,
@@ -40,7 +58,12 @@ export const getGlobalStats = async () => {
   const averageSaleValue = salesStats.totalEntries > 0 ? parseFloat((totalRevenue / salesStats.totalEntries).toFixed(2)) : 0;
 
   // Inventory stats
+  const productQuery: any = {};
+  if (filter?.shop_id) {
+    productQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
   const inventoryAggregate = await Product.aggregate([
+    { $match: productQuery },
     {
       $group: {
         _id: null,
@@ -62,7 +85,17 @@ export const getGlobalStats = async () => {
   const inventoryStats = inventoryAggregate[0] || { totalProducts: 0, totalValue: 0, lowStock: 0, outOfStock: 0 };
 
   // Customer / Udhar stats
+  const customerMatch: any = {};
+  if (filter?.shop_id) {
+    customerMatch.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  if (filter?.startDate || filter?.endDate) {
+    customerMatch.date = {};
+    if (filter.startDate) customerMatch.date.$gte = filter.startDate;
+    if (filter.endDate) customerMatch.date.$lte = filter.endDate;
+  }
   const customerAggregate = await UdharEntry.aggregate([
+    { $match: customerMatch },
     {
       $group: {
         _id: "$customer_name",
@@ -97,9 +130,18 @@ export const getGlobalStats = async () => {
   const customerStats = customerAggregate[0] || { totalCustomers: 0, activeCustomers: 0, pendingPaymentsCount: 0, totalOutstanding: 0 };
 
   // Orders/Shifts stats
-  const totalOrders = await ShiftLog.countDocuments();
-  const completedOrders = await ShiftLog.countDocuments({ status: "closed" });
-  const pendingOrders = await ShiftLog.countDocuments({ status: "open" });
+  const shiftQuery: any = {};
+  if (filter?.shop_id) {
+    shiftQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  if (filter?.startDate || filter?.endDate) {
+    shiftQuery.created_at = {};
+    if (filter.startDate) shiftQuery.created_at.$gte = new Date(filter.startDate);
+    if (filter.endDate) shiftQuery.created_at.$lte = new Date(filter.endDate);
+  }
+  const totalOrders = await ShiftLog.countDocuments(shiftQuery);
+  const completedOrders = await ShiftLog.countDocuments({ ...shiftQuery, status: "closed" });
+  const pendingOrders = await ShiftLog.countDocuments({ ...shiftQuery, status: "open" });
 
   return {
     shops: {
@@ -107,8 +149,8 @@ export const getGlobalStats = async () => {
       active: activeShops,
       inactive: inactiveShops,
       newShops,
-      highestRevenue: await getShopsByRevenueOrder(-1, 5),
-      lowestRevenue: await getShopsByRevenueOrder(1, 5)
+      highestRevenue: await getShopsByRevenueOrder(-1, 5, filter),
+      lowestRevenue: await getShopsByRevenueOrder(1, 5, filter)
     },
     users: {
       total: totalUsers,
@@ -145,9 +187,18 @@ export const getGlobalStats = async () => {
   };
 };
 
-const getShopsByRevenueOrder = async (order: 1 | -1, limit: number) => {
+const getShopsByRevenueOrder = async (order: 1 | -1, limit: number, filter?: { startDate?: string | undefined; endDate?: string | undefined; shop_id?: string | undefined }) => {
+  const matchQuery: any = { is_closed: true };
+  if (filter?.shop_id) {
+    matchQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  if (filter?.startDate || filter?.endDate) {
+    matchQuery.date = {};
+    if (filter.startDate) matchQuery.date.$gte = filter.startDate;
+    if (filter.endDate) matchQuery.date.$lte = filter.endDate;
+  }
   const result = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     {
       $group: {
         _id: "$shop_id",
@@ -177,10 +228,20 @@ const getShopsByRevenueOrder = async (order: 1 | -1, limit: number) => {
 };
 
 // 2. PLATFORM-WIDE CHARTS
-export const getGlobalCharts = async () => {
+export const getGlobalCharts = async (filter?: { startDate?: string | undefined; endDate?: string | undefined; shop_id?: string | undefined }) => {
+  const matchQuery: any = { is_closed: true };
+  if (filter?.shop_id) {
+    matchQuery.shop_id = new Types.ObjectId(filter.shop_id);
+  }
+  if (filter?.startDate || filter?.endDate) {
+    matchQuery.date = {};
+    if (filter.startDate) matchQuery.date.$gte = filter.startDate;
+    if (filter.endDate) matchQuery.date.$lte = filter.endDate;
+  }
+
   // Monthly Revenue & Profit (Past 12 months)
   const monthlyTrend = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     {
       $group: {
         _id: { $substr: ["$date", 0, 7] }, // YYYY-MM
@@ -194,12 +255,16 @@ export const getGlobalCharts = async () => {
   ]);
 
   // Daily Trend (Past 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+  const dailyMatch: any = { ...matchQuery };
+  if (!filter?.startDate && !filter?.endDate) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split("T")[0];
+    dailyMatch.date = { $gte: thirtyDaysAgoStr };
+  }
 
   const dailyTrend = await DailyEntry.aggregate([
-    { $match: { is_closed: true, date: { $gte: thirtyDaysAgoStr } } },
+    { $match: dailyMatch },
     {
       $group: {
         _id: "$date",
@@ -213,7 +278,7 @@ export const getGlobalCharts = async () => {
 
   // Top Performing Shops
   const topShops = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     {
       $group: {
         _id: "$shop_id",
@@ -243,7 +308,7 @@ export const getGlobalCharts = async () => {
 
   // Top Selling Products
   const topProducts = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     { $unwind: "$products" },
     {
       $group: {
@@ -258,7 +323,7 @@ export const getGlobalCharts = async () => {
 
   // Expense Breakdown by Category
   const expenseBreakdown = await DailyEntry.aggregate([
-    { $match: { is_closed: true } },
+    { $match: matchQuery },
     { $unwind: "$products" },
     {
       $lookup: {
@@ -285,7 +350,15 @@ export const getGlobalCharts = async () => {
   ]);
 
   // Shop growth trend
+  const growthQuery: any = {};
+  if (filter?.startDate || filter?.endDate) {
+    growthQuery.created_at = {};
+    if (filter.startDate) growthQuery.created_at.$gte = new Date(filter.startDate);
+    if (filter.endDate) growthQuery.created_at.$lte = new Date(filter.endDate);
+  }
+
   const shopGrowth = await Shop.aggregate([
+    { $match: growthQuery },
     {
       $group: {
         _id: { $substr: [{ $dateToString: { format: "%Y-%m-%d", date: "$created_at" } }, 0, 7] },
